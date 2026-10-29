@@ -1,0 +1,74 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/game/GameShell.gd" id="1_shell"]
+[ext_resource type="Script" path="res://scripts/ui/SafeAreaContainer.gd" id="2_safe"]
+
+[node name="GameShell" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_shell")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.09, 0.11, 0.16, 1)
+
+[node name="SafeArea" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_safe")
+
+[node name="Layout" type="VBoxContainer" parent="SafeArea"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TopRow" type="HBoxContainer" parent="SafeArea/Layout"]
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="SafeArea/Layout/TopRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+text = "Volver al menú"
+
+[node name="Spacer" type="Control" parent="SafeArea/Layout/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DemoTag" type="Label" parent="SafeArea/Layout/TopRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.79, 0.65, 0.29, 1)
+text = "UI-01 · DEMO"
+vertical_alignment = 1
+
+[node name="Center" type="CenterContainer" parent="SafeArea/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Message" type="VBoxContainer" parent="SafeArea/Layout/Center"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Heading" type="Label" parent="SafeArea/Layout/Center/Message"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+text = "Pantalla principal (vacía)"
+horizontal_alignment = 1
+
+[node name="Detail" type="Label" parent="SafeArea/Layout/Center/Message"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.72, 1)
+text = "El mapa y los paneles se añadirán en UI-02 y UI-03."
+horizontal_alignment = 1

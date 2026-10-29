@@ -1,0 +1,57 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/app/Boot.gd" id="1_boot"]
+[ext_resource type="Script" path="res://scripts/ui/SafeAreaContainer.gd" id="2_safe"]
+
+[node name="Boot" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_boot")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.07, 0.09, 0.13, 1)
+
+[node name="SafeArea" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_safe")
+
+[node name="Center" type="VBoxContainer" parent="SafeArea"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="SafeArea/Center"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.79, 0.65, 0.29, 1)
+theme_override_font_sizes/font_size = 52
+text = "SIMULADOR PRESIDENTE"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="SafeArea/Center"]
+layout_mode = 2
+text = "Prototipo de interfaz · UI-01 · DEMO"
+horizontal_alignment = 1
+
+[node name="StartRow" type="CenterContainer" parent="SafeArea/Center"]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="SafeArea/Center/StartRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(420, 80)
+layout_mode = 2
+text = "Toca para comenzar"

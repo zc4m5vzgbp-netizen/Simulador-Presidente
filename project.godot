@@ -1,0 +1,36 @@
+; Engine configuration file.
+; Simulador Presidente — UI-01 (arranque, menú y GameShell).
+; Godot 4.4.1 · GDScript · exportación web sin hilos para Safari iPhone.
+
+config_version=5
+
+[application]
+
+config/name="Simulador Presidente"
+config/description="Prototipo de interfaz UI-01 (DEMO, sin motor de simulación)."
+run/main_scene="res://scenes/boot/Boot.tscn"
+config/features=PackedStringArray("4.4", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+AppState="*res://scripts/app/AppState.gd"
+UIManager="*res://scripts/app/UIManager.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=540
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=0
+
+[gui]
+
+theme/custom="res://assets/theme/base_theme.tres"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.07, 0.09, 0.13, 1)
