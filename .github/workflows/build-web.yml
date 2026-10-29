@@ -41,10 +41,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Descargar el código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Caché de Godot y plantillas
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/godot
@@ -75,7 +75,7 @@ jobs:
         run: bash tools/ci/verify_web_build.sh build/web
 
       - name: Guardar artefacto web-build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-build
           path: build/web
@@ -84,7 +84,7 @@ jobs:
 
       - name: Guardar registros
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: godot-logs
           path: "*.log"
@@ -100,7 +100,7 @@ jobs:
     environment: preview
     steps:
       - name: Recuperar artefacto web-build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: web-build
           path: build/web
