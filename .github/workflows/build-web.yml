@@ -1,0 +1,121 @@
+# Simulador Presidente — compilación web (UI-01)
+#
+# Trabajo "build": se ejecuta en cada push a ramas feat/** y manualmente.
+#   1) instala Godot 4.4.1 + plantillas web (verificadas con SHA512)
+#   2) importa el proyecto        → falla si el registro contiene errores
+#   3) ejecuta la prueba de humo  → falla si alguna comprobación falla
+#   4) exporta la versión web sin hilos
+#   5) verifica la compilación y guarda el artefacto "web-build"
+#
+# Trabajo "deploy-preview": DESACTIVADO por defecto. Solo se ejecuta si:
+#   - la variable de repositorio PREVIEW_DEPLOY_ENABLED vale "true", y
+#   - el usuario aprueba el despliegue en el entorno "preview".
+# Nunca se ejecuta para main. No hay credenciales en este archivo: los
+# secretos los guarda el usuario en GitHub (entorno "preview").
+
+name: build-web
+
+on:
+  push:
+    branches: ["feat/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-web-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.4.1"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Importar, probar y exportar
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Caché de Godot y plantillas
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-stable-web-v1
+
+      - name: Instalar Godot ${{ env.GODOT_VERSION }}
+        run: bash tools/ci/install_godot.sh "${GODOT_VERSION}"
+
+      - name: Importar el proyecto
+        run: |
+          godot --headless --import 2>&1 | tee import.log
+          bash tools/ci/check_log.sh import.log
+
+      - name: Prueba de humo (navegación y zonas seguras)
+        run: |
+          timeout 120 godot --headless res://tests/smoke/SmokeTest.tscn 2>&1 | tee smoke.log
+          bash tools/ci/check_log.sh smoke.log
+
+      - name: Exportar versión web (sin hilos)
+        run: |
+          mkdir -p build/web
+          godot --headless --export-release "Web" build/web/index.html 2>&1 | tee export.log
+          bash tools/ci/check_log.sh export.log
+          cp web/_headers build/web/_headers
+
+      - name: Verificar la compilación
+        run: bash tools/ci/verify_web_build.sh build/web
+
+      - name: Guardar artefacto web-build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Guardar registros
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-logs
+          path: "*.log"
+          retention-days: 14
+          if-no-files-found: ignore
+
+  deploy-preview:
+    name: Vista previa en Cloudflare Pages (requiere aprobación)
+    needs: build
+    if: vars.PREVIEW_DEPLOY_ENABLED == 'true' && github.ref != 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: preview
+    steps:
+      - name: Recuperar artefacto web-build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+
+      - name: Desplegar vista previa por rama
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          if [[ -z "${CLOUDFLARE_API_TOKEN}" || -z "${CLOUDFLARE_ACCOUNT_ID}" ]]; then
+            echo "::error::Faltan los secretos de Cloudflare en el entorno 'preview'."
+            exit 1
+          fi
+          npx --yes wrangler@4 pages deploy build/web \
+            --project-name=simulador-presidente \
+            --branch="${BRANCH_NAME}" \
+            --commit-dirty=true
