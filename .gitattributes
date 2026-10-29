@@ -1,0 +1,8 @@
+# Finales de línea LF en todo el proyecto (recomendación de Godot)
+* text=auto eol=lf
+
+# Binarios
+*.png binary
+*.jpg binary
+*.wasm binary
+*.pck binary

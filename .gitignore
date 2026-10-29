@@ -1,0 +1,16 @@
+# Caché de importación de Godot (se regenera)
+.godot/
+
+# Compilaciones locales y de CI
+build/
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Secretos: nunca deben entrar al repositorio
+.env
+.env.*
+*.pem
+*.key
