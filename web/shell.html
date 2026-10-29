@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<!--
+	Plantilla web de Simulador Presidente (UI-01).
+	Basada en la plantilla oficial de Godot 4.4.1 (godot.html, licencia MIT),
+	adaptada a Safari en iPhone:
+	  - viewport-fit=cover: el juego ocupa toda la pantalla, incluidas las
+	    zonas de la muesca/isla dinámica; los márgenes los aplica Godot.
+	  - #sp-safe-probe + window.spSafeArea(): mide env(safe-area-inset-*) y
+	    se lo entrega a Godot (scripts/platform/WebBridge.gd).
+	  - #sp-rotate: aviso "gira el teléfono" en vertical. Una web no puede
+	    forzar la orientación horizontal en iPhone; solo puede avisar.
+	  - Bloqueo del zoom de la página (pellizco/doble toque) para que los
+	    gestos lleguen al juego.
+	Los marcadores con prefijo GODOT_ los sustituye Godot al exportar.
+-->
+<html lang="es">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+		<meta name="apple-mobile-web-app-title" content="Simulador Presidente">
+		<meta name="theme-color" content="#121823">
+		<title>$GODOT_PROJECT_NAME</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+html, body {
+	width: 100%;
+	height: 100%;
+	overscroll-behavior: none;
+}
+
+body {
+	color: white;
+	background-color: #121823;
+	overflow: hidden;
+	touch-action: none;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+	-webkit-tap-highlight-color: transparent;
+	-webkit-text-size-adjust: 100%;
+}
+
+#canvas {
+	display: block;
+	touch-action: none;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+/* Sonda invisible: su padding vale exactamente las zonas seguras. */
+#sp-safe-probe {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 0;
+	height: 0;
+	visibility: hidden;
+	pointer-events: none;
+	padding-top: env(safe-area-inset-top, 0px);
+	padding-right: env(safe-area-inset-right, 0px);
+	padding-bottom: env(safe-area-inset-bottom, 0px);
+	padding-left: env(safe-area-inset-left, 0px);
+}
+
+/* Aviso de orientación: solo visible en vertical. */
+#sp-rotate {
+	display: none;
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	box-sizing: border-box;
+	padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)) 24px;
+	background-color: #121823;
+	color: #e6e9ee;
+	font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+	text-align: center;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+}
+
+#sp-rotate .sp-rotate-icon {
+	width: 72px;
+	height: 72px;
+}
+
+#sp-rotate h1 {
+	margin: 0;
+	font-size: 22px;
+	font-weight: 600;
+	color: #c9a54a;
+}
+
+#sp-rotate p {
+	margin: 0;
+	max-width: 280px;
+	font-size: 16px;
+	line-height: 1.4;
+	color: #b8c0cc;
+}
+
+@media (orientation: portrait) {
+	#sp-rotate {
+		display: flex;
+	}
+}
+
+#status, #status-splash, #status-progress {
+	position: absolute;
+	left: 0;
+	right: 0;
+}
+
+#status, #status-splash {
+	top: 0;
+	bottom: 0;
+}
+
+#status {
+	background-color: $GODOT_SPLASH_COLOR;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	visibility: hidden;
+}
+
+#status-splash {
+	max-height: 100%;
+	max-width: 100%;
+	margin: auto;
+}
+
+#status-splash.show-image--false {
+	display: none;
+}
+
+#status-splash.fullsize--true {
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+}
+
+#status-splash.use-filter--false {
+	image-rendering: pixelated;
+}
+
+#status-progress, #status-notice {
+	display: none;
+}
+
+#status-progress {
+	bottom: 10%;
+	width: 50%;
+	margin: 0 auto;
+}
+
+#status-notice {
+	background-color: #5b3943;
+	border-radius: 0.5rem;
+	border: 1px solid #9b3943;
+	color: #e0e0e0;
+	font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+	line-height: 1.3;
+	margin: 0 2rem;
+	overflow: hidden;
+	padding: 1rem;
+	text-align: center;
+	z-index: 1;
+}
+		</style>
+		<script>
+// Zonas seguras como fracción de la ventana; las lee WebBridge.gd.
+window.spSafeArea = function () {
+	var probe = document.getElementById('sp-safe-probe');
+	if (!probe) {
+		return '';
+	}
+	var cs = window.getComputedStyle(probe);
+	var w = window.innerWidth || 1;
+	var h = window.innerHeight || 1;
+	return JSON.stringify({
+		top: (parseFloat(cs.paddingTop) || 0) / h,
+		right: (parseFloat(cs.paddingRight) || 0) / w,
+		bottom: (parseFloat(cs.paddingBottom) || 0) / h,
+		left: (parseFloat(cs.paddingLeft) || 0) / w,
+	});
+};
+
+// Safari ignora user-scalable=no; se bloquean sus gestos de zoom de página.
+['gesturestart', 'gesturechange', 'gestureend'].forEach(function (type) {
+	document.addEventListener(type, function (e) { e.preventDefault(); }, { passive: false });
+});
+		</script>
+		$GODOT_HEAD_INCLUDE
+	</head>
+	<body>
+		<canvas id="canvas">
+			Tu navegador no admite el elemento canvas.
+		</canvas>
+
+		<noscript>
+			Tu navegador no tiene JavaScript activado.
+		</noscript>
+
+		<div id="sp-safe-probe" aria-hidden="true"></div>
+
+		<div id="sp-rotate" role="alert">
+			<svg class="sp-rotate-icon" viewBox="0 0 72 72" aria-hidden="true">
+				<rect x="22" y="8" width="28" height="48" rx="5" fill="none" stroke="#7f93ad" stroke-width="4"/>
+				<rect x="10" y="38" width="52" height="28" rx="5" fill="none" stroke="#c9a54a" stroke-width="4"/>
+				<path d="M58 22a14 14 0 0 0-10-12" fill="none" stroke="#c9a54a" stroke-width="3"/>
+				<path d="M44 6l4 4-5 3" fill="none" stroke="#c9a54a" stroke-width="3"/>
+			</svg>
+			<h1>Gira el teléfono</h1>
+			<p>Simulador Presidente se juega en horizontal. Gira tu iPhone para continuar.</p>
+		</div>
+
+		<div id="status">
+			<img id="status-splash" class="$GODOT_SPLASH_CLASSES" src="$GODOT_SPLASH" alt="">
+			<progress id="status-progress"></progress>
+			<div id="status-notice"></div>
+		</div>
+
+		<script src="$GODOT_URL"></script>
+		<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusProgress = document.getElementById('status-progress');
+	const statusNotice = document.getElementById('status-notice');
+
+	let initializing = true;
+	let statusMode = '';
+
+	function setStatusMode(mode) {
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		if (mode === 'hidden') {
+			statusOverlay.remove();
+			initializing = false;
+			return;
+		}
+		statusOverlay.style.visibility = 'visible';
+		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		statusMode = mode;
+	}
+
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const lines = text.split('\n');
+		lines.forEach((line) => {
+			statusNotice.appendChild(document.createTextNode(line));
+			statusNotice.appendChild(document.createElement('br'));
+		});
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === 'string') {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice('Se produjo un error desconocido.');
+		}
+		setStatusMode('notice');
+		initializing = false;
+	}
+
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
+
+	if (missing.length !== 0) {
+		const missingMsg = 'Error\nA este navegador le faltan funciones necesarias para ejecutar el juego:\n';
+		displayFailureNotice(missingMsg + missing.join('\n'));
+	} else {
+		setStatusMode('progress');
+		engine.startGame({
+			'onProgress': function (current, total) {
+				if (current > 0 && total > 0) {
+					statusProgress.value = current;
+					statusProgress.max = total;
+				} else {
+					statusProgress.removeAttribute('value');
+					statusProgress.removeAttribute('max');
+				}
+			},
+		}).then(() => {
+			setStatusMode('hidden');
+		}, displayFailureNotice);
+	}
+}());
+		</script>
+	</body>
+</html>

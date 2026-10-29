@@ -1,0 +1,10 @@
+# Cabeceras para Cloudflare Pages.
+# Godot exporta siempre con los mismos nombres (index.html, index.wasm,
+# index.pck...). "no-cache" obliga a Safari a comprobar si hay versión nueva
+# en cada visita (usa la copia guardada si no cambió), así nunca se mezcla
+# una compilación antigua con una nueva.
+# La exportación sin hilos no necesita cabeceras COOP/COEP.
+/*
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
